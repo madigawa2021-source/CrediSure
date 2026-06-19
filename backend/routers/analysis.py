@@ -144,8 +144,9 @@ async def analyze_statement(
         response = model.generate_content(prompt)
         risk_summary = response.text
         status = "success"
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Gemini error: {e}")
+        risk_summary = None
 
     return {
         "transactions_found": len(transactions),
