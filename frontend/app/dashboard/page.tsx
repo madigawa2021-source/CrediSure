@@ -70,6 +70,12 @@ export default function DashboardPage() {
           >
             Upload Bank Statement
           </a>
+          <a
+            href="/analysis"
+            className="flex-1 bg-purple-600 text-white text-center py-4 rounded-xl font-semibold hover:bg-purple-700 transition-colors"
+          >
+            AI Statement Analysis
+          </a>
         </div>
       </main>
     </div>

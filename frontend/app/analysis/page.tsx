@@ -1,0 +1,223 @@
+'use client';
+
+import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+interface AnalysisResult {
+  transactions_found: number;
+  categories: { [key: string]: number };
+  categorized_transactions: any[];
+  risk_summary: string;
+  status: "success" | "partial";
+}
+
+export default function AnalysisPage() {
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    const token = localStorage.getItem('credisure_token');
+    if (!token) {
+      router.push('/login');
+    }
+  }, [router]);
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files.length > 0) {
+      const file = e.dataTransfer.files[0];
+      if (file.type === 'application/pdf') {
+        setSelectedFile(file);
+        setMessage(null);
+        setResult(null);
+      } else {
+        setMessage({ text: 'Please upload a PDF file', type: 'error' });
+      }
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      if (file.type === 'application/pdf') {
+        setSelectedFile(file);
+        setMessage(null);
+        setResult(null);
+      } else {
+        setMessage({ text: 'Please upload a PDF file', type: 'error' });
+        setSelectedFile(null);
+      }
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedFile) return;
+    setLoading(true);
+    setMessage(null);
+    setResult(null);
+
+    const token = localStorage.getItem('credisure_token');
+    if (!token) return;
+
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+
+    try {
+      const response = await fetch(`${API_URL}/analysis/analyze-statement`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.detail || 'Analysis failed');
+      }
+
+      const data = await response.json();
+      setResult(data);
+      setMessage({ text: 'Analysis complete!', type: 'success' });
+    } catch (err: any) {
+      setMessage({ text: err.message, type: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <nav className="bg-white shadow-sm border-b">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex h-16 items-center">
+            <a href="/dashboard" className="text-gray-600 hover:text-gray-900 font-medium flex items-center gap-2">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Back
+            </a>
+          </div>
+        </div>
+      </nav>
+
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold text-gray-900">AI Bank Statement Analysis</h2>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {message && (
+            <div className={`rounded-lg p-4 border ${
+              message.type === 'success' ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-600'
+            }`}>
+              {message.text}
+            </div>
+          )}
+
+          <div
+            className={`border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-colors ${
+              isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-blue-400'
+            }`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="application/pdf"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+            {selectedFile ? (
+              <div>
+                <svg className="w-12 h-12 text-blue-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <p className="text-gray-900 font-medium">{selectedFile.name}</p>
+                <p className="text-sm text-gray-500 mt-2">Click to change file</p>
+              </div>
+            ) : (
+              <div>
+                <svg className="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <p className="text-gray-900 font-medium mb-2">Drag & drop your bank statement PDF here</p>
+                <p className="text-gray-500">or click to browse</p>
+              </div>
+            )}
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading || !selectedFile}
+            className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors"
+          >
+            {loading ? 'Analyzing...' : 'Analyze Statement'}
+          </button>
+        </form>
+
+        {result && (
+          <div className="mt-8 space-y-6">
+            <div className="bg-white rounded-2xl shadow-sm border p-8">
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">Analysis Results</h3>
+
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="p-4 bg-blue-50 rounded-lg">
+                  <p className="text-sm text-gray-600 mb-1">Transactions Found</p>
+                  <p className="text-3xl font-bold text-blue-700">{result.transactions_found}</p>
+                </div>
+                <div className="p-4 bg-green-50 rounded-lg">
+                  <p className="text-sm text-gray-600 mb-1">Status</p>
+                  <p className="text-xl font-bold text-green-700 capitalize">{result.status}</p>
+                </div>
+              </div>
+
+              {Object.keys(result.categories).length > 0 && (
+                <div className="mb-6">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Spending Summary</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {Object.entries(result.categories).map(([cat, amt]) => (
+                      <div key={cat} className="p-3 bg-gray-50 rounded-lg">
+                        <p className="text-sm text-gray-600 mb-1 capitalize">{cat.replace("_", " ")}</p>
+                        <p className="text-xl font-bold text-gray-900">₦{amt.toLocaleString()}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {result.risk_summary && (
+                <div className="p-6 bg-gray-50 rounded-lg">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Risk Assessment</h4>
+                  <p className="text-gray-700 whitespace-pre-line">{result.risk_summary}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
