@@ -4,14 +4,13 @@ from database.connection import get_db
 from utils.auth import get_current_user
 from models.models import User, UploadedDocument
 import pdfplumber
-import google.generativeai as genai
+from google import genai
 import os
 import io
 import re
 from datetime import datetime
 
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-model = genai.GenerativeModel("gemini-2.0-flash")
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 router = APIRouter(prefix="/analysis", tags=["AI Analysis"])
 
@@ -141,7 +140,10 @@ async def analyze_statement(
 
         Keep the entire response under 200 words. Be specific and professional.
         """
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=prompt
+        )
         risk_summary = response.text
         status = "success"
     except Exception as e:
