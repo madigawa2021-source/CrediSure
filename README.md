@@ -5,7 +5,7 @@ FastAPI, and AI-powered bank statement analysis.
 
 ## Live Demo
 - Frontend: [Deploy link here]
-- API Docs: [Deploy link here]/docs
+- API Docs: `https://credisure-api.onrender.com/docs`
 
 ## GitHub
 `https://github.com/madigawa2021-source/CrediSure`
