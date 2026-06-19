@@ -1,0 +1,10 @@
+# Python
+__pycache__/
+*.pyc
+.env
+credisure.db
+
+# Node
+node_modules/
+.next/
+.env.local
