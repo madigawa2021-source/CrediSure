@@ -141,7 +141,7 @@ async def analyze_statement(
         Keep the entire response under 200 words. Be specific and professional.
         """
         response = client.models.generate_content(
-            model="gemini-2.0-flash",
+            model="gemini-1.5-flash-8b",
             contents=prompt
         )
         risk_summary = response.text
