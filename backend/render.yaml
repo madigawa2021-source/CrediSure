@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: credisure-api
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        value: sqlite:///./credisure.db
+      - key: SECRET_KEY
+        value: credisure-secret-key-2026
+      - key: ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 30
