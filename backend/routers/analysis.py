@@ -4,7 +4,7 @@ from database.connection import get_db
 from utils.auth import get_current_user
 from models.models import User, UploadedDocument
 import pdfplumber
-from google import genai
+import google.genai as genai
 import os
 import io
 import re
