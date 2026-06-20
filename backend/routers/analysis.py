@@ -388,6 +388,7 @@ async def analyze_statement(
 
     db.add(assessment)
     db.commit()
+    db.refresh(assessment)
 
     # Gemini narrative summary
     risk_summary = None
