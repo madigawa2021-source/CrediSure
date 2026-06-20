@@ -9,6 +9,7 @@ export default function UploadPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [uploadResult, setUploadResult] = useState<any>(null);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
@@ -62,6 +63,7 @@ export default function UploadPage() {
     if (!selectedFile) return;
     setLoading(true);
     setMessage(null);
+    setUploadResult(null);
 
     const token = localStorage.getItem('credisure_token');
     if (!token) return;
@@ -83,7 +85,15 @@ export default function UploadPage() {
         throw new Error(data.detail || 'Upload failed');
       }
 
-      setMessage({ text: 'Statement uploaded successfully', type: 'success' });
+      const data = await response.json();
+
+      setUploadResult(data);
+
+      setMessage({
+        text: data.message,
+        type: 'success',
+      });
+
     } catch (err: any) {
       setMessage({ text: err.message, type: 'error' });
     } finally {
@@ -117,6 +127,33 @@ export default function UploadPage() {
               message.type === 'success' ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-600'
             }`}>
               {message.text}
+            </div>
+          )}
+
+          {uploadResult && (
+            <div className="bg-green-50 border border-green-200 rounded-xl p-6">
+              <h3 className="text-lg font-semibold text-green-800 mb-4">
+                Upload Successful
+              </h3>
+
+              <div className="space-y-2 text-green-700">
+                <p>
+                  <span className="font-medium">Filename:</span>{' '}
+                  {uploadResult.file_name}
+                </p>
+
+                <p>
+                  <span className="font-medium">Uploaded At:</span>{' '}
+                  {uploadResult.uploaded_at}
+                </p>
+              </div>
+
+              <a
+                href="/analysis"
+               className="mt-6 inline-block bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition-colors"
+              >
+                Analyze This Statement
+               </a>
             </div>
           )}
 

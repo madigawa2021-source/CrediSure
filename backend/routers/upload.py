@@ -36,6 +36,9 @@ def upload_statement(
     db.refresh(new_document)
     return {
         "file_name": file.filename,
+        "file_type": "pdf",
         "status": "completed",
-        "message": "Statement uploaded successfully"
+        "message": "Statement uploaded successfully",
+        "uploaded_at": str(new_document.uploaded_at),
+        "next_step": "Go to AI Analysis to analyze this statement"
     }

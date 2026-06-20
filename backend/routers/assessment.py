@@ -1,5 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
+from sqlalchemy import desc
+
 from database.connection import get_db
 from models.models import User, CreditAssessment
 from schemas.schemas import AssessmentInput, AssessmentOutput
@@ -10,17 +12,25 @@ router = APIRouter(prefix="/assessment", tags=["Credit Assessment"])
 
 def calculate_credit_score(monthly_income, monthly_expense, existing_loans):
     savings_rate = (monthly_income - monthly_expense) / monthly_income
-    debt_to_income = existing_loans / monthly_income if monthly_income > 0 else 1
+    debt_to_income = (
+        existing_loans / monthly_income
+        if monthly_income > 0
+        else 1
+    )
+
     score = 300
     score += max(0, savings_rate * 300)
     score -= min(200, debt_to_income * 200)
+
     if monthly_income >= 500000:
         score += 150
     elif monthly_income >= 200000:
         score += 100
     elif monthly_income >= 100000:
         score += 50
+
     score = max(300, min(850, int(score)))
+
     if score >= 750:
         rating, risk = "Excellent", "Very Low Risk"
     elif score >= 650:
@@ -31,6 +41,7 @@ def calculate_credit_score(monthly_income, monthly_expense, existing_loans):
         rating, risk = "Fair", "High Risk"
     else:
         rating, risk = "Poor", "Very High Risk"
+
     return score, rating, risk
 
 
@@ -45,6 +56,7 @@ def create_assessment(
         data.monthly_expense,
         data.existing_loans
     )
+
     new_assessment = CreditAssessment(
         user_id=current_user.id,
         monthly_income=data.monthly_income,
@@ -54,11 +66,47 @@ def create_assessment(
         rating=rating,
         risk_level=risk
     )
+
     db.add(new_assessment)
     db.commit()
     db.refresh(new_assessment)
+
     return {
         "credit_score": score,
         "rating": rating,
         "risk_level": risk
+    }
+
+
+@router.get("/latest")
+def get_latest_assessment(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    assessment = (
+        db.query(CreditAssessment)
+        .filter(
+            CreditAssessment.user_id == current_user.id
+        )
+        .order_by(
+            desc(CreditAssessment.assessed_at)
+        )
+        .first()
+    )
+
+    if assessment:
+        return {
+            "credit_score": assessment.credit_score,
+            "rating": assessment.rating,
+            "risk_level": assessment.risk_level,
+            "assessed_at": str(
+                assessment.assessed_at
+            ),
+        }
+
+    return {
+        "credit_score": None,
+        "rating": None,
+        "risk_level": None,
+        "assessed_at": None,
     }
